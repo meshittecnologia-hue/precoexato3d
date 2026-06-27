@@ -560,6 +560,24 @@
     <div id="new-user-info" style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:10px 14px;font-size:12px;color:#f97316;margin-top:4px">
       📧 Um convite será enviado por e-mail para o usuário definir a senha.
     </div>
+    <div class="form-group" style="margin-top:14px">
+      <label class="form-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Senha inicial</span>
+        <button type="button" onclick="gerarSenha()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--accent);cursor:pointer;font-weight:600">⚡ Gerar automática</button>
+      </label>
+      <div style="position:relative">
+        <input class="form-input" id="new-user-senha" type="password" placeholder="Mínimo 8 caracteres" style="padding-right:40px" oninput="validarForcaSenha(this.value)">
+        <button type="button" onclick="toggleSenhaVisivel()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px" id="btn-ver-senha">👁</button>
+      </div>
+      <div id="senha-strength" style="margin-top:6px;font-size:11px;height:16px"></div>
+      <div id="senha-gerada-wrap" style="display:none;margin-top:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Senha gerada — copie antes de salvar:</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <code id="senha-gerada-txt" style="flex:1;font-size:13px;color:var(--green);letter-spacing:.05em;word-break:break-all"></code>
+          <button type="button" onclick="copiarSenha()" style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--text2);cursor:pointer;white-space:nowrap">📋 Copiar</button>
+        </div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-add-user')">Cancelar</button>
       <button class="btn btn-primary" onclick="addUserManual()">Criar usuário</button>
@@ -817,8 +835,63 @@ function showPage(page) {
 }
 
 // ============================================================
-// TEMA CLARO / ESCURO
+// SENHA — GERADOR E VALIDAÇÃO
 // ============================================================
+function gerarSenha() {
+  const maiusculas = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const minusculas = 'abcdefghjkmnpqrstuvwxyz';
+  const numeros    = '23456789';
+  const especiais  = '@#$!%*?&';
+  // Garante pelo menos 1 de cada categoria
+  let senha = [
+    maiusculas[Math.floor(Math.random()*maiusculas.length)],
+    maiusculas[Math.floor(Math.random()*maiusculas.length)],
+    minusculas[Math.floor(Math.random()*minusculas.length)],
+    minusculas[Math.floor(Math.random()*minusculas.length)],
+    numeros[Math.floor(Math.random()*numeros.length)],
+    numeros[Math.floor(Math.random()*numeros.length)],
+    especiais[Math.floor(Math.random()*especiais.length)],
+    especiais[Math.floor(Math.random()*especiais.length)],
+  ];
+  const todos = maiusculas+minusculas+numeros+especiais;
+  while(senha.length < 12) senha.push(todos[Math.floor(Math.random()*todos.length)]);
+  // Embaralhar
+  senha = senha.sort(()=>Math.random()-.5).join('');
+  document.getElementById('new-user-senha').value = senha;
+  document.getElementById('new-user-senha').type = 'text';
+  document.getElementById('btn-ver-senha').textContent = '🙈';
+  document.getElementById('senha-gerada-txt').textContent = senha;
+  document.getElementById('senha-gerada-wrap').style.display = 'block';
+  validarForcaSenha(senha);
+}
+
+function copiarSenha() {
+  const txt = document.getElementById('senha-gerada-txt').textContent;
+  navigator.clipboard.writeText(txt).then(()=>showToast('Senha copiada!','success'));
+}
+
+function toggleSenhaVisivel() {
+  const inp = document.getElementById('new-user-senha');
+  const btn = document.getElementById('btn-ver-senha');
+  if (inp.type === 'password') { inp.type='text'; btn.textContent='🙈'; }
+  else { inp.type='password'; btn.textContent='👁'; }
+}
+
+function validarForcaSenha(v) {
+  const el = document.getElementById('senha-strength');
+  if (!v) { el.textContent=''; return true; }
+  const tem = {
+    mai: /[A-Z]/.test(v),
+    min: /[a-z]/.test(v),
+    num: /[0-9]/.test(v),
+    esp: /[@#$!%*?&]/.test(v),
+    len: v.length >= 8,
+  };
+  const ok = Object.values(tem).filter(Boolean).length;
+  if (ok < 3) { el.innerHTML='<span style="color:var(--red)">❌ Senha fraca — use maiúsculas, minúsculas, número e caractere especial</span>'; return false; }
+  if (ok < 5) { el.innerHTML='<span style="color:var(--yellow)">⚠️ Senha média — adicione mais variedade</span>'; return false; }
+  el.innerHTML='<span style="color:var(--green)">✅ Senha forte</span>'; return true;
+}
 function toggleTheme() {
   const isLight = document.body.classList.toggle('light');
   document.getElementById('theme-icon').textContent = isLight ? '☀️' : '🌙';
@@ -1020,6 +1093,11 @@ function openAddUserModal() {
   document.getElementById('new-user-name').value = '';
   document.getElementById('new-user-plan').value = 'free';
   document.getElementById('new-user-role').value = 'user';
+  document.getElementById('new-user-senha').value = '';
+  document.getElementById('new-user-senha').type = 'password';
+  document.getElementById('btn-ver-senha').textContent = '👁';
+  document.getElementById('senha-strength').textContent = '';
+  document.getElementById('senha-gerada-wrap').style.display = 'none';
   applyPlanModules('new-mod-', 'free');
   openModal('modal-add-user');
 }
@@ -1029,26 +1107,37 @@ async function addUserManual() {
   const name  = document.getElementById('new-user-name').value.trim();
   const plan  = document.getElementById('new-user-plan').value;
   const role  = document.getElementById('new-user-role').value;
+  const senha = document.getElementById('new-user-senha').value;
   const mods  = getCheckedModules('new-mod-');
-  if (!email) { showToast('E-mail obrigatório', 'error'); return; }
 
-  // Convidar via Supabase Auth (envia email com link de definição de senha)
-  const { data, error } = await sb.auth.admin?.inviteUserByEmail
-    ? await sb.auth.admin.inviteUserByEmail(email, { data: { full_name: name } })
-    : { data: null, error: { message: 'Convite requer Service Role Key. Use o Supabase Dashboard → Authentication → Invite.' }};
+  if (!email) { showToast('E-mail obrigatório', 'error'); return; }
+  if (!senha) { showToast('Defina uma senha ou gere automaticamente', 'error'); return; }
+  if (!validarForcaSenha(senha)) { showToast('Senha não atende aos critérios de segurança', 'error'); return; }
+
+  // Criar usuário via Supabase Auth Admin (requer service role — fallback com instrução)
+  const { data, error } = await sb.auth.admin?.createUser
+    ? await sb.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { full_name: name } })
+    : { data: null, error: { message: 'service_role' } };
 
   if (error) {
-    // Fallback: mostrar instruções
-    showToast('Convite: use o Supabase Dashboard → Authentication → Users → Invite. Depois edite o plano aqui.', 'error');
-    closeModal('modal-add-user');
-    return;
+    if (error.message === 'service_role' || error.message?.includes('not allowed')) {
+      // Fallback: criar via signUp público (funciona no free tier)
+      const { data: d2, error: e2 } = await sb.auth.signUp({ email, password: senha, options: { data: { full_name: name } } });
+      if (e2) { showToast('Erro: ' + e2.message, 'error'); return; }
+      if (d2?.user) {
+        await sb.from('profiles').update({ name, plan, role, modules: mods, updated_at: new Date() }).eq('id', d2.user.id);
+        await sb.from('admin_logs').insert({ admin_id: currentAdmin.id, action: 'create_user', target_user: d2.user.id, details: { plan, role, mods } });
+        showToast('Usuário criado! Peça para verificar o e-mail.', 'success');
+      }
+    } else {
+      showToast('Erro: ' + error.message, 'error'); return;
+    }
+  } else if (data?.user) {
+    await sb.from('profiles').update({ name, plan, role, modules: mods, updated_at: new Date() }).eq('id', data.user.id);
+    await sb.from('admin_logs').insert({ admin_id: currentAdmin.id, action: 'create_user', target_user: data.user.id, details: { plan, role, mods } });
+    showToast('Usuário criado com sucesso!', 'success');
   }
 
-  if (data?.user) {
-    await sb.from('profiles').update({ name, plan, role, modules: mods, updated_at: new Date() }).eq('id', data.user.id);
-    await sb.from('admin_logs').insert({ admin_id: currentAdmin.id, action: 'invite_user', target_user: data.user.id, details: { plan, role, mods } });
-    showToast('Convite enviado para ' + email, 'success');
-  }
   closeModal('modal-add-user');
   loadUsers();
 }
