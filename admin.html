@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PrecoExato 3D — Painel Admin</title>
+<title>MoneyFlow 3D — Painel Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -152,6 +152,7 @@
   .badge-maker    { background: rgba(249,115,22,.15); color: var(--accent); }
   .badge-pro      { background: rgba(59,130,246,.15); color: var(--blue); }
   .badge-annual   { background: rgba(168,85,247,.15); color: #a855f7; }
+  .badge-interno  { background: rgba(34,197,94,.15); color: var(--green); }
   .badge-admin    { background: rgba(239,68,68,.15); color: var(--red); }
   .badge-active   { background: rgba(34,197,94,.15); color: var(--green); }
   .badge-cancelled{ background: rgba(239,68,68,.15); color: var(--red); }
@@ -253,7 +254,7 @@
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">⬡ Precifica 3D</div>
+    <div class="login-logo">⬡ MoneyFlow 3D</div>
     <div class="login-sub">Painel Administrativo — MeshIT Tecnologia</div>
     <input type="email" id="login-email" placeholder="E-mail admin" value="meshit.tecnologia@gmail.com">
     <input type="password" id="login-pass" placeholder="Senha" id="login-pass">
@@ -268,7 +269,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <div class="brand">⬡ Precifica 3D</div>
+        <div class="brand">⬡ MoneyFlow 3D</div>
         <div class="sub">Admin Panel</div>
       </div>
       <nav class="nav">
@@ -299,6 +300,10 @@
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           Webhooks
         </button>
+        <button class="nav-item" onclick="showPage('backup')">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Backup
+        </button>
       </nav>
       <div class="sidebar-footer">
         <div class="admin-badge">
@@ -321,7 +326,7 @@
       <div class="page active" id="page-dashboard">
         <div class="page-header">
           <div class="page-title">Dashboard</div>
-          <div class="page-sub">Visão geral do Precifica 3D SaaS</div>
+          <div class="page-sub">Visão geral do MoneyFlow 3D SaaS</div>
         </div>
         <div class="cards-grid" id="dash-cards">
           <div class="card"><div class="card-label">Total Usuários</div><div class="card-value blue" id="d-total">—</div><div class="card-delta">cadastrados</div></div>
@@ -353,10 +358,11 @@
           <input class="search-input" id="user-search" placeholder="Buscar por nome ou e-mail..." oninput="filterUsers()">
           <select class="filter-select" id="user-plan-filter" onchange="filterUsers()">
             <option value="">Todos os planos</option>
-            <option value="free">Free / Hobby</option>
-            <option value="maker">Maker</option>
-            <option value="pro">Pro</option>
-            <option value="annual_maker">Anual</option>
+            <option value="free">Hobby / Grátis</option>
+            <option value="maker">Pro Mensal</option>
+            <option value="pro">Pro Anual</option>
+            <option value="annual_maker">Anual (legado)</option>
+            <option value="interno">⚙ Interno/Staff</option>
           </select>
           <select class="filter-select" id="user-role-filter" onchange="filterUsers()">
             <option value="">Todos os roles</option>
@@ -444,6 +450,54 @@
         </div>
       </div>
 
+      <!-- BACKUP -->
+      <div class="page" id="page-backup">
+        <div class="page-header">
+          <div class="page-title">Backup</div>
+          <div class="page-sub">Exporte e restaure dados do Supabase</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px">
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">👥 Usuários (profiles)</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Exporta todos os perfis com plano, role e módulos</div>
+            <button class="btn btn-primary" style="width:100%" onclick="backupTable('profiles')">⬇ Baixar CSV</button>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">💳 Assinaturas</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Exporta histórico completo de assinaturas</div>
+            <button class="btn btn-primary" style="width:100%" onclick="backupTable('subscriptions')">⬇ Baixar CSV</button>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">📋 Logs Admin</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Exporta histórico de todas as ações administrativas</div>
+            <button class="btn btn-primary" style="width:100%" onclick="backupTable('admin_logs')">⬇ Baixar CSV</button>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">🔗 Webhooks</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Exporta log de eventos recebidos da Kiwify</div>
+            <button class="btn btn-primary" style="width:100%" onclick="backupTable('webhook_logs')">⬇ Baixar CSV</button>
+          </div>
+
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">📦 Backup completo (JSON)</div>
+            <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Exporta tudo em um único arquivo JSON estruturado</div>
+            <button class="btn btn-primary" style="width:100%;background:#22c55e;border-color:#22c55e" onclick="backupCompleto()">⬇ Baixar JSON completo</button>
+          </div>
+
+        </div>
+
+        <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.3);border-radius:10px;padding:14px 18px;font-size:13px;color:var(--accent)">
+          ℹ️ <strong>Recomendação:</strong> Faça backup semanal antes de grandes alterações. O Supabase free tier mantém backups automáticos por 7 dias no plano pago.
+        </div>
+
+        <div id="backup-status" style="margin-top:16px;font-size:13px;color:var(--text3)"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -466,12 +520,13 @@
         <option value="free">Hobby — Grátis</option>
         <option value="maker">Pro Mensal — R$11,99/mês</option>
         <option value="pro">Pro Anual — R$9,99/mês</option>
+        <option value="interno">⚙ Interno/Staff — acesso total sem cobrança</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Role / Permissão</label>
       <select class="form-select" id="new-user-role">
-        <option value="user">👤 Usuário — acesso somente ao PrecoExato 3D</option>
+        <option value="user">👤 Usuário — acesso somente ao MoneyFlow 3D</option>
         <option value="admin">🔑 Administrador — acesso ao painel admin + app</option>
       </select>
       <div style="margin-top:6px;font-size:12px;color:#6b7294">⚠️ Administradores têm acesso total ao painel e a todos os dados.</div>
@@ -519,12 +574,13 @@
         <option value="maker">Pro Mensal — R$11,99/mês</option>
         <option value="pro">Pro Anual — R$9,99/mês</option>
         <option value="annual_maker">Anual Maker (legado)</option>
+        <option value="interno">⚙ Interno/Staff — acesso total sem cobrança</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Role / Permissão</label>
       <select class="form-select" id="edit-user-role">
-        <option value="user">👤 Usuário — acesso somente ao PrecoExato 3D</option>
+        <option value="user">👤 Usuário — acesso somente ao MoneyFlow 3D</option>
         <option value="admin">🔑 Administrador — acesso ao painel admin + app</option>
       </select>
       <div style="margin-top:6px;font-size:12px;color:#6b7294">⚠️ Administradores têm acesso total ao painel e a todos os dados.</div>
@@ -606,12 +662,13 @@
         <option value="maker">Pro Mensal — R$11,99/mês</option>
         <option value="pro">Pro Anual — R$9,99/mês (R$119,88/ano)</option>
         <option value="annual_maker">Anual Maker — R$159/ano (legado)</option>
+        <option value="interno">⚙ Interno/Staff — acesso total sem cobrança</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Role / Permissão</label>
       <select class="form-select" id="sub-role">
-        <option value="user">👤 Usuário — acesso somente ao PrecoExato 3D</option>
+        <option value="user">👤 Usuário — acesso somente ao MoneyFlow 3D</option>
         <option value="admin">🔑 Administrador — acesso ao painel admin + app</option>
       </select>
       <div style="margin-top:6px;font-size:12px;color:#6b7294">⚠️ Administradores têm acesso total ao painel e a todos os dados.</div>
@@ -742,6 +799,59 @@ function showPage(page) {
   if (page === 'modules')       loadModules();
   if (page === 'logs')          loadLogs();
   if (page === 'webhooks')      loadWebhooks();
+  // backup não precisa carregar nada
+}
+
+// ============================================================
+// BACKUP
+// ============================================================
+function jsonToCSV(data) {
+  if (!data || !data.length) return '';
+  const headers = Object.keys(data[0]);
+  const rows = data.map(row =>
+    headers.map(h => {
+      const v = row[h] === null || row[h] === undefined ? '' : String(row[h]);
+      return '"' + v.replace(/"/g, '""') + '"';
+    }).join(';')
+  );
+  return '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+async function backupTable(table) {
+  const status = document.getElementById('backup-status');
+  status.textContent = '⏳ Exportando ' + table + '...';
+  const { data, error } = await sb.from(table).select('*').order('created_at', { ascending: false });
+  if (error) { status.textContent = '❌ Erro: ' + error.message; return; }
+  if (!data || !data.length) { status.textContent = 'ℹ️ Nenhum dado em ' + table; return; }
+  const csv = jsonToCSV(data);
+  const date = new Date().toISOString().slice(0, 10);
+  downloadFile(csv, `moneyflow3d_${table}_${date}.csv`, 'text/csv;charset=utf-8');
+  status.textContent = `✅ ${data.length} registros exportados de ${table}`;
+  showToast('Backup de ' + table + ' baixado!', 'success');
+}
+
+async function backupCompleto() {
+  const status = document.getElementById('backup-status');
+  status.textContent = '⏳ Exportando backup completo...';
+  const tables = ['profiles', 'subscriptions', 'modules', 'user_modules', 'admin_logs', 'webhook_logs'];
+  const backup = { exportado_em: new Date().toISOString(), sistema: 'MoneyFlow 3D', versao: '1.0' };
+  for (const t of tables) {
+    const { data } = await sb.from(t).select('*').order('created_at', { ascending: false });
+    backup[t] = data || [];
+  }
+  const date = new Date().toISOString().slice(0, 10);
+  downloadFile(JSON.stringify(backup, null, 2), `moneyflow3d_backup_completo_${date}.json`, 'application/json');
+  const total = Object.values(backup).filter(Array.isArray).reduce((s, a) => s + a.length, 0);
+  status.textContent = `✅ Backup completo: ${total} registros exportados`;
+  showToast('Backup completo baixado!', 'success');
 }
 
 // ============================================================
@@ -790,10 +900,11 @@ const PLAN_MODULES = {
   maker:        ['calc','pdf','wpp','crm','fila','estoque'],
   pro:          ['calc','pdf','wpp','crm','fila','estoque','relatorio','ilimitado'],
   annual_maker: ['calc','pdf','wpp','crm','fila','estoque','relatorio','ilimitado'],
+  interno:      ['calc','pdf','wpp','crm','fila','estoque','relatorio','ilimitado'],
 };
 
-const PLAN_PRICES = { free: 0, maker: 11.99, pro: 9.99, annual_maker: 13.25 };
-const PLAN_LABELS = { free:'Hobby', maker:'Pro Mensal', pro:'Pro Anual', annual_maker:'Anual' };
+const PLAN_PRICES = { free: 0, maker: 11.99, pro: 9.99, annual_maker: 13.25, interno: 0 };
+const PLAN_LABELS = { free:'Hobby', maker:'Pro Mensal', pro:'Pro Anual', annual_maker:'Anual', interno:'⚙ Interno/Staff' };
 
 function applyPlanModules(prefix, plan) {
   const mods = PLAN_MODULES[plan] || ['calc'];
@@ -859,7 +970,7 @@ function renderUsers(users) {
         <div style="font-weight:600">${u.name || '—'}</div>
         <div style="font-size:12px;color:var(--text3)">${u.email || '—'}</div>
       </td>
-      <td><span class="badge badge-${u.plan === 'annual_maker' ? 'annual' : u.plan}">${PLAN_LABELS[u.plan]||u.plan}</span></td>
+      <td><span class="badge badge-${u.plan === 'annual_maker' ? 'annual' : u.plan === 'interno' ? 'interno' : u.plan}">${PLAN_LABELS[u.plan]||u.plan}</span></td>
       <td>${u.role === 'admin'
         ? '<span class="badge badge-admin">🔑 Admin</span>'
         : '<span style="font-size:12px;color:var(--text3)">👤 Usuário</span>'}</td>
