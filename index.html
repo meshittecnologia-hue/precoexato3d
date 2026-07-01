@@ -1676,15 +1676,13 @@ async function salvar(){
 
   const { data, error } = await _supa.from('products').insert({
     user_id: uid, name: nome,
-    filament_id: (filId&&!isNaN(filId)&&filId>200)?null:null,
     filament_name: fil?fil.nome:'—',
-    cost_total: r.total, price_base: r.base, price_final: r.baseFinal,
+    cost_total: r.total, price_base: r.base,
     margin: r.base>0?((r.base-r.total)/r.base*100):0,
-    markup: r.markup*100, discount: r.desconto*100,
+    markup: r.markup*100,
     print_hours: r.printH, grams_used: parseFloat(document.getElementById('c-grams').value)||0,
     packaging: r.emb, supplies: r.ins,
     labor_hour: parseFloat(document.getElementById('c-hora').value)||0,
-    labor_min: parseInt(document.getElementById('c-tman').value)||0,
   }).select().single();
 
   if(error){ notify('Erro ao salvar: '+error.message,'red'); return; }
@@ -1765,7 +1763,7 @@ async function saveCliente(){
 async function delCliente(id){
   if(!confirm('Remover este cliente?')) return;
   await _supa.from('clientes').delete().eq('id', id);
-  DB.clientes = DB.clientes.filter(c=>c.id!==id);
+  DB.clientes = DB.clientes.filter(c=>String(c.id)!==String(id));
   renderCRM(); notify('Removido','red');
 }
 
@@ -1912,7 +1910,7 @@ async function saveFila(){
 /* ── AVANÇAR STATUS FILA ─────────────────────────────── */
 async function avancarStatus(id){
   const order=['aguardando','fatiando','imprimindo','pos_processo','pronto','ag_envio','enviado','entregue'];
-  const item = DB.fila.find(x=>x.id===id); if(!item) return;
+  const item = DB.fila.find(x=>String(x.id)===String(id)); if(!item) return;
   const idx = order.indexOf(item.status);
   if(idx<order.length-1){
     const proximo = order[idx+1];
@@ -1929,7 +1927,7 @@ async function avancarStatus(id){
 }
 
 async function updateFilaStatus(id, status){
-  const item = DB.fila.find(x=>x.id===id); if(!item) return;
+  const item = DB.fila.find(x=>String(x.id)===String(id)); if(!item) return;
   if(status==='ag_envio' && !item.transportadora){
     abrirRastreioObrigatorio(id); return;
   }
@@ -1941,7 +1939,7 @@ async function updateFilaStatus(id, status){
 async function delFila(id){
   if(!confirm('Remover este pedido da fila?')) return;
   await _supa.from('fila_producao').delete().eq('id', id);
-  DB.fila = DB.fila.filter(x=>x.id!==id);
+  DB.fila = DB.fila.filter(x=>String(x.id)!==String(id));
   renderFila(); notify('Removido','red');
 }
 
@@ -2013,7 +2011,7 @@ async function saveEstoque(){
 }
 
 async function ajustarQtdEstoque(id, delta){
-  const item = DB.estoque.find(x=>x.id===id); if(!item) return;
+  const item = DB.estoque.find(x=>String(x.id)===String(id)); if(!item) return;
   item.qtd = Math.max(0, item.qtd+delta);
   item.atualizado = new Date().toLocaleDateString('pt-BR');
   await _supa.from('estoque').update({ qtd: item.qtd, atualizado: item.atualizado }).eq('id', id);
@@ -2023,7 +2021,7 @@ async function ajustarQtdEstoque(id, delta){
 async function delEstoque(id){
   if(!confirm('Remover do estoque?')) return;
   await _supa.from('estoque').delete().eq('id', id);
-  DB.estoque = DB.estoque.filter(x=>x.id!==id);
+  DB.estoque = DB.estoque.filter(x=>String(x.id)!==String(id));
   renderEstoque(); notify('Removido','red');
 }
 
@@ -2052,7 +2050,7 @@ async function saveImp(){
 
 async function delImp(id){
   await _supa.from('printers').delete().eq('id', id);
-  DB.impressoras = DB.impressoras.filter(x=>x.id!==id);
+  DB.impressoras = DB.impressoras.filter(x=>String(x.id)!==String(id));
   renderConfig(); notify('Removida','red');
 }
 
@@ -2546,17 +2544,17 @@ function renderFilamentos(){
       <td><span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${col.bg};color:${col.text}">${f.tipo}</span></td>
       <td>${f.custo>0?'R$ '+(f.custo/(f.peso/1000)).toFixed(2):'<span style="color:var(--accent);font-size:11px">cadastrar preço</span>'}</td>
       <td style="color:var(--text2)">${f.custo>0?'R$ '+(f.custo/f.peso).toFixed(4):'—'}</td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="editFil(${f.id})">Editar</button><button class="btn btn-danger btn-sm" onclick="delFil(${f.id})">✕</button></td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="editFil('${f.id}')">Editar</button><button class="btn btn-danger btn-sm" onclick="delFil('${f.id}')">✕</button></td>
     </tr>`;
   }).join('');
 }
 function delFil(id){
   if(!confirm('Excluir este filamento?'))return;
-  DB.filamentos=DB.filamentos.filter(x=>x.id!==id);
+  DB.filamentos=DB.filamentos.filter(x=>String(x.id)!==String(id));
   saveDB();renderFilamentos();notify('Filamento removido','red');
 }
 function editFil(id){
-  const f=DB.filamentos.find(x=>x.id===id);if(!f)return;
+  const f=DB.filamentos.find(x=>String(x.id)===String(id));if(!f)return;
   editFilId=id;
   document.getElementById('mf-nome').value=f.nome;
   document.getElementById('mf-marca').value=f.marca||'';
@@ -2577,7 +2575,7 @@ function renderConfig(){
         <div style="font-weight:500">${i.nome}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">R$ ${i.inv} | ROI ${i.roi}m | ${i.watts}W | ${i.hpd}h/dia | ${i.fail}% falhas</div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="delImp(${i.id})">Excluir</button>
+      <button class="btn btn-danger btn-sm" onclick="delImp('${i.id}')">Excluir</button>
     </div>`).join('')||'<div style="color:var(--text3);font-size:13px">Nenhuma impressora cadastrada</div>';
 }
 
@@ -2722,7 +2720,7 @@ function renderCatalogo(){
         ${p.marketplace?`<div style="color:var(--text3)">Marketplace</div><div>${p.marketplace}</div>`:''}
       </div>
       <div style="margin-top:10px;display:flex;justify-content:flex-end">
-        <button class="btn btn-danger btn-sm" onclick="delCatalogo(${p.id})">✕ Remover</button>
+        <button class="btn btn-danger btn-sm" onclick="delCatalogo('${p.id}')">✕ Remover</button>
       </div>
     </div>`;
   }).join('');
@@ -2730,7 +2728,7 @@ function renderCatalogo(){
 
 function delCatalogo(id){
   if(!confirm('Remover do catálogo?'))return;
-  DB.catalogos=(DB.catalogos||[]).filter(x=>x.id!==id);
+  DB.catalogos=(DB.catalogos||[]).filter(x=>String(x.id)!==String(id));
   saveDB();renderCatalogo();notify('Removido','red');
 }
 
@@ -3568,7 +3566,7 @@ function exportarClientesCSV(){
 
 function abrirDetalheCliente(id){
   crmDetalheId=id;
-  const c=DB.clientes.find(x=>x.id===id);if(!c)return;
+  const c=DB.clientes.find(x=>String(x.id)===String(id));if(!c)return;
   const orcs=(DB.orcamentos||[]).filter(o=>o.clienteId==id).sort((a,b)=>b.ts-a.ts);
   const pedidos=(DB.fila||[]).filter(f=>f.clienteId==id).sort((a,b)=>b.ts-a.ts);
   const totalGasto=orcs.filter(o=>o.status==='aprovado').reduce((s,o)=>s+o.total,0);
@@ -3690,7 +3688,7 @@ function renderCRMGrid(clientes){
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0">
           <button class="btn btn-ghost btn-sm" onclick='event.stopPropagation();openClienteModal(${JSON.stringify(c)})' title="Editar">✏</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="event.stopPropagation();delCliente(${c.id})" title="Remover">✕</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="event.stopPropagation();delCliente('${c.id}')" title="Remover">✕</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">
@@ -3701,7 +3699,7 @@ function renderCRMGrid(clientes){
       ${ultimoOrc?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Último orçamento: ${ultimoOrc.data}</div>`:''}
       ${c.obs?`<div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-style:italic">${c.obs}</div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="abrirDetalheCliente(${c.id})">📋 Histórico</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="abrirDetalheCliente('${c.id}')">📋 Histórico</button>
         ${c.wpp?`<button class="btn btn-ghost btn-sm" style="color:var(--green)" onclick="window.open('https://wa.me/55'+('${c.wpp}'.replace(/\\D/g,'')), '_blank')" title="WhatsApp">📱</button>`:''}
         ${c.email?`<button class="btn btn-ghost btn-sm" style="color:var(--blue)" onclick="window.open('mailto:${c.email}')" title="E-mail">✉</button>`:''}
         ${c.insta?`<a href="${instaUrl}" target="_blank" class="btn btn-ghost btn-sm" style="color:#e1306c" title="Instagram">📸</a>`:''}
@@ -3734,9 +3732,9 @@ function renderCRMLista(clientes){
         <td style="padding:11px 14px;text-align:center;font-weight:700;color:var(--accent)">${orcCount}</td>
         <td style="padding:11px 14px;text-align:right;font-weight:700;color:var(--green)">R$ ${totalGasto.toFixed(2)}</td>
         <td style="padding:11px 14px"><div style="display:flex;gap:4px">
-          <button class="btn btn-ghost btn-sm" onclick="abrirDetalheCliente(${c.id})" title="Histórico">📋</button>
+          <button class="btn btn-ghost btn-sm" onclick="abrirDetalheCliente('${c.id}')" title="Histórico">📋</button>
           <button class="btn btn-ghost btn-sm" onclick='openClienteModal(${JSON.stringify(c)})' title="Editar">✏</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delCliente(${c.id})" title="Remover">✕</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delCliente('${c.id}')" title="Remover">✕</button>
         </div></td>
       </tr>`;
     }).join('')}</tbody>
@@ -3800,17 +3798,17 @@ function renderEstoque(){
         <span style="font-size:11px;font-weight:700;background:${cor}22;color:${cor};padding:2px 8px;border-radius:20px">${i.tipo}</span>
         <div style="display:flex;gap:4px">
           <button class="btn btn-ghost btn-sm" onclick='openEstoqueModal(${JSON.stringify(i)})' title="Editar">✏</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delEstoque(${i.id})">✕</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delEstoque('${i.id}')">✕</button>
         </div>
       </div>
       <div style="font-size:13px;font-weight:700;margin-bottom:10px">${i.nome}</div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <button onclick="ajustarQtdEstoque(${i.id},-1)" style="width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);line-height:1">−</button>
+        <button onclick="ajustarQtdEstoque('${i.id}',-1)" style="width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);line-height:1">−</button>
         <div style="text-align:center;flex:1">
           <div style="font-size:24px;font-weight:800;color:${low?'var(--red)':'var(--text)'}">${i.qtd}</div>
           <div style="font-size:10px;color:var(--text3)">carretel${i.qtd!==1?'s':''}</div>
         </div>
-        <button onclick="ajustarQtdEstoque(${i.id},1)" style="width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);line-height:1">+</button>
+        <button onclick="ajustarQtdEstoque('${i.id}',1)" style="width:28px;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);line-height:1">+</button>
       </div>
       <div style="font-size:11px;color:var(--text3)">Alerta em ≤ ${i.min} carretel${i.min!==1?'s':''} ${low?'⚠️':''}</div>
       ${i.obs?`<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">${i.obs}</div>`:''}
@@ -3975,9 +3973,9 @@ function renderFila(){
           <select onchange="updateFilaStatus(${i.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:${st.cor};font-size:12px;outline:none">
             ${statusOrder.map(s=>`<option value="${s}" ${i.status===s?'selected':''}>${FILA_STATUS[s].label}</option>`).join('')}
           </select>
-          ${i.status!=='entregue'?`<button class="btn btn-ghost btn-sm" onclick="avancarStatus(${i.id})" title="Avançar status" style="color:var(--accent)">▶</button>`:''}
+          ${i.status!=='entregue'?`<button class="btn btn-ghost btn-sm" onclick="avancarStatus('${i.id}')" title="Avançar status" style="color:var(--accent)">▶</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick='openFilaModal(${JSON.stringify(i).replace(/'/g,"&#39;").replace(/"/g,"&quot;")})' title="Editar">✏</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delFila(${i.id})" title="Remover">✕</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="delFila('${i.id}')" title="Remover">✕</button>
           ${i.clienteNome&&i.clienteNome!=='—'?`<button class="btn btn-ghost btn-sm" style="color:var(--green)" onclick="wppFila(${i.id})" title="WhatsApp">📱</button>`:''}
         </div>
       </div>
