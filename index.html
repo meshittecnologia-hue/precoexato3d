@@ -1674,18 +1674,22 @@ async function salvar(){
   const r = lastCalc;
   const uid = _currentUser.id;
 
-  const { data, error } = await _supa.from('products').insert({
+  const _insertData = {
     user_id: uid, name: nome,
     filament_name: fil?fil.nome:'—',
-    cost_total: r.total, price_base: r.base,
-    margin: r.base>0?((r.base-r.total)/r.base*100):0,
-    markup: r.markup*100,
-    print_hours: r.printH, grams_used: parseFloat(document.getElementById('c-grams').value)||0,
-    packaging: r.emb, supplies: r.ins,
-    labor_hour: parseFloat(document.getElementById('c-hora').value)||0,
-  }).select().single();
+    cost_total: parseFloat(r.total.toFixed(2)),
+    price_base: parseFloat(r.base.toFixed(2)),
+    margin: parseFloat((r.base>0?((r.base-r.total)/r.base*100):0).toFixed(2)),
+    markup: parseFloat((r.markup*100).toFixed(2)),
+    print_hours: parseFloat(r.printH.toFixed(4)),
+    grams_used: parseFloat((parseFloat(document.getElementById('c-grams').value)||0).toFixed(2)),
+    packaging: parseFloat((r.emb||0).toFixed(2)),
+    supplies: parseFloat((r.ins||0).toFixed(2)),
+    labor_hour: parseFloat((parseFloat(document.getElementById('c-hora').value)||0).toFixed(2)),
+  };
+  const { data, error } = await _supa.from('products').insert(_insertData).select().single();
 
-  if(error){ notify('Erro ao salvar: '+error.message,'red'); return; }
+  if(error){ notify('Erro ao salvar: '+error.message,'red'); console.error('salvar produto',error); return; }
 
   // Adicionar no DB local
   DB.produtos.unshift({
@@ -1749,7 +1753,7 @@ async function saveCliente(){
       name: cli.nome, whatsapp: cli.wpp, instagram: cli.insta,
       email: cli.email, notes: cli.obs
     }).eq('id', id);
-    DB.clientes = DB.clientes.map(c=>c.id===id?{...c,...cli}:c);
+    DB.clientes = DB.clientes.map(c=>String(c.id)===String(id)?{...c,...cli}:c);
   } else {
     const { data } = await _supa.from('clientes').insert({
       user_id: uid, name: cli.nome, whatsapp: cli.wpp,
@@ -1762,9 +1766,10 @@ async function saveCliente(){
 
 async function delCliente(id){
   if(!confirm('Remover este cliente?')) return;
-  await _supa.from('clientes').delete().eq('id', id);
+  const {error} = await _supa.from('clientes').delete().eq('id', id);
+  if(error){ notify('Erro ao remover: '+error.message,'red'); console.error('delCliente',error); return; }
   DB.clientes = DB.clientes.filter(c=>String(c.id)!==String(id));
-  renderCRM(); notify('Removido','red');
+  renderCRM(); notify('Cliente removido','red');
 }
 
 /* ── SALVAR ORÇAMENTO ────────────────────────────────── */
@@ -1917,8 +1922,9 @@ async function avancarStatus(id){
     if(item.status==='pronto' && proximo==='ag_envio' && !item.transportadora){
       abrirRastreioObrigatorio(id); return;
     }
+    const {error:errAv} = await _supa.from('fila_producao').update({ status: proximo }).eq('id', id);
+    if(errAv){ notify('Erro ao avançar: '+errAv.message,'red'); console.error('avancarStatus',errAv); return; }
     item.status = proximo;
-    await _supa.from('fila_producao').update({ status: proximo }).eq('id', id);
     const filtro = document.getElementById('fila-status-filter');
     if(filtro) filtro.value = item.status;
     renderFila();
@@ -1938,9 +1944,10 @@ async function updateFilaStatus(id, status){
 
 async function delFila(id){
   if(!confirm('Remover este pedido da fila?')) return;
-  await _supa.from('fila_producao').delete().eq('id', id);
+  const {error} = await _supa.from('fila_producao').delete().eq('id', id);
+  if(error){ notify('Erro ao remover: '+error.message,'red'); console.error('delFila',error); return; }
   DB.fila = DB.fila.filter(x=>String(x.id)!==String(id));
-  renderFila(); notify('Removido','red');
+  renderFila(); notify('Removido da fila','red');
 }
 
 /* ── SALVAR RASTREIO ─────────────────────────────────── */
